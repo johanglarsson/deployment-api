@@ -7,7 +7,6 @@ import se.company.platform.deployment.domain.Version;
 import org.yaml.snakeyaml.DumperOptions;
 
 import java.io.StringWriter;
-import java.util.List;
 import java.util.Map;
 
 public class ArgoCdYamlManifestParser implements ArgoCdManifestParser {
@@ -24,7 +23,6 @@ public class ArgoCdYamlManifestParser implements ArgoCdManifestParser {
     @Override
     @SuppressWarnings("unchecked")
     public Version readCurrentVersion(String manifest) {
-        // TODO: support loading muliple documents in one file and filter
         Map<String, Object> root = yaml.load(manifest);
         Map<String, Object> spec = (Map<String, Object>) root.get("spec");
         if (spec == null) {
@@ -43,7 +41,6 @@ public class ArgoCdYamlManifestParser implements ArgoCdManifestParser {
     @Override
     @SuppressWarnings("unchecked")
     public String updateVersion(String manifest, Version newVersion) {
-
         Object rootObj = yaml.load(manifest);
         if (!(rootObj instanceof Map<?, ?> root)) {
             throw new IllegalStateException("YAML root is not an object/map");

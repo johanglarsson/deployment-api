@@ -4,8 +4,10 @@ import java.util.List;
 
 import se.company.platform.deployment.domain.CommitRange;
 import se.company.platform.deployment.domain.CommitSummary;
-import se.company.platform.deployment.domain.ServiceIdentifier;
+import se.company.platform.deployment.domain.ServiceLocator;
 
-public interface CommitEvidencePort {
-    List<CommitSummary> getCommitsBetween(CommitRange range, ServiceIdentifier service);
+public interface AppSourceRepositoryPort {
+
+    List<CommitSummary> getCommitsBetween(CommitRange range, ServiceLocator locator);
+
 }

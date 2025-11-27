@@ -1,16 +1,10 @@
 package se.company.platform.deployment.domain.service;
 
 import java.util.List;
-import java.util.UUID;
 
-import se.company.platform.deployment.domain.ChangeMetrics;
 import se.company.platform.deployment.domain.CommitRange;
 import se.company.platform.deployment.domain.CommitSummary;
-import se.company.platform.deployment.domain.CoverageEvidence;
 import se.company.platform.deployment.domain.Deployment;
-import se.company.platform.deployment.domain.DeploymentId;
-import se.company.platform.deployment.domain.MergeRequestInfo;
-import se.company.platform.deployment.domain.TestEvidence;
 import se.company.platform.deployment.domain.Version;
 import se.company.platform.deployment.domain.port.in.DeploymentUseCase;
 import se.company.platform.deployment.domain.port.out.CommitEvidencePort;
@@ -45,11 +39,12 @@ public final class DeploymentService implements DeploymentUseCase {
 
         @Override
         public Deployment deploy(DeployCommand command) {
-                Version previousVersion = configRepository.getCurrentVersion(command.service(), command.environment());
+                Version currentVersion = configRepository.getCurrentVersion(command.locator(), command.service(),
+                                command.environment());
 
-                CommitRange range = new CommitRange(previousVersion, command.targetVersion());
+                CommitRange range = new CommitRange(currentVersion, command.targetVersion());
 
-                List<CommitSummary> commits = commitHistory.getCommitsBetween(range, command.service());
+                List<CommitSummary> commits = commitHistory.getCommitsBetween(range, command.locator());
                 /**
                  * ChangeMetrics metrics = buildMetrics(commits);
                  * TestEvidence tests = testEvidencePort.getTestEvidence(command.service(),
