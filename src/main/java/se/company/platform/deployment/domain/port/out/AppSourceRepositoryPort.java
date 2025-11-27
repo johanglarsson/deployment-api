@@ -4,10 +4,10 @@ import java.util.List;
 
 import se.company.platform.deployment.domain.CommitRange;
 import se.company.platform.deployment.domain.CommitSummary;
-import se.company.platform.deployment.domain.ServiceLocator;
+import se.company.platform.deployment.domain.ProjectLocator;
 
 public interface AppSourceRepositoryPort {
 
-    List<CommitSummary> getCommitsBetween(CommitRange range, ServiceLocator locator);
+    List<CommitSummary> getCommitsBetween(CommitRange range, ProjectLocator locator);
 
 }

@@ -4,19 +4,19 @@ import java.util.UUID;
 
 public class Deployment {
     private final DeploymentId id;
-    private final ServiceLocator locator;
+    private final ProjectLocator locator;
     private final ServiceIdentifier service;
     private final Environment environment;
     private final Version previousVersion;
     private final Version targetVersion;
     private final ChangeSummary changeSummary;
     private final ApprovalDecision approvalDecision;
-    private final MergeRequestInfo mergeRequestInfo;
+    private final DeploymentMergeRequest mergeRequestInfo;
 
-    public Deployment(DeploymentId id, ServiceIdentifier service, ServiceLocator locator,
+    public Deployment(DeploymentId id, ServiceIdentifier service, ProjectLocator locator,
             Environment environment, Version previousVersion,
             Version targetVersion, ChangeSummary changeSummary, ApprovalDecision approvalDecision,
-            MergeRequestInfo mergeRequestInfo) {
+            DeploymentMergeRequest mergeRequestInfo) {
         this.id = id;
         this.service = service;
         this.locator = locator;

@@ -1,5 +1,7 @@
 package se.company.platform.deployment.domain.service;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.List;
 
 import se.company.platform.deployment.domain.CommitRange;
@@ -7,44 +9,33 @@ import se.company.platform.deployment.domain.CommitSummary;
 import se.company.platform.deployment.domain.Deployment;
 import se.company.platform.deployment.domain.Version;
 import se.company.platform.deployment.domain.port.in.DeploymentUseCase;
-import se.company.platform.deployment.domain.port.out.CommitEvidencePort;
-import se.company.platform.deployment.domain.port.out.ConfigRepositoryPort;
-import se.company.platform.deployment.domain.port.out.CoverageEvidencePort;
-import se.company.platform.deployment.domain.port.out.TestEvidencePort;
-import se.company.platform.deployment.domain.port.out.VersionControlPort;
+import se.company.platform.deployment.domain.port.out.GitOpsConfigRepositoryPort;
+import se.company.platform.deployment.domain.port.out.CiEvidencePort;
+import se.company.platform.deployment.domain.port.out.AppSourceRepositoryPort;
 
 public final class DeploymentService implements DeploymentUseCase {
 
-        private final ConfigRepositoryPort configRepository;
-        private final CommitEvidencePort commitHistory;
-        private final TestEvidencePort testEvidencePort;
-        private final CoverageEvidencePort coverageEvidencePort;
-        private final VersionControlPort versionControlPort;
-        private final ClassificationPolicy classificationPolicy;
+        private final GitOpsConfigRepositoryPort gitOpsConfigRepositoryPort;
+        private final CiEvidencePort ciEvidencePort;
+        private final AppSourceRepositoryPort appSourceRepositoryPort;
 
-        public DeploymentService(
-                        ConfigRepositoryPort configRepository,
-                        CommitEvidencePort commitHistory,
-                        TestEvidencePort testEvidencePort,
-                        CoverageEvidencePort coverageEvidencePort,
-                        VersionControlPort versionControlPort,
-                        ClassificationPolicy classificationPolicy) {
-                this.configRepository = configRepository;
-                this.commitHistory = commitHistory;
-                this.testEvidencePort = testEvidencePort;
-                this.coverageEvidencePort = coverageEvidencePort;
-                this.versionControlPort = versionControlPort;
-                this.classificationPolicy = classificationPolicy;
+        public DeploymentService(GitOpsConfigRepositoryPort gitOpsConfigRepositoryPort, CiEvidencePort ciEvidencePort,
+                        AppSourceRepositoryPort appSourceRepositoryPort) {
+                this.gitOpsConfigRepositoryPort = requireNonNull(gitOpsConfigRepositoryPort);
+                this.ciEvidencePort = requireNonNull(ciEvidencePort);
+                this.appSourceRepositoryPort = requireNonNull(appSourceRepositoryPort);
         }
 
         @Override
         public Deployment deploy(DeployCommand command) {
-                Version currentVersion = configRepository.getCurrentVersion(command.locator(), command.service(),
+                Version currentVersion = gitOpsConfigRepositoryPort.getDeployedVersion(command.configLocator(),
+                                command.service(),
                                 command.environment());
 
                 CommitRange range = new CommitRange(currentVersion, command.targetVersion());
 
-                List<CommitSummary> commits = commitHistory.getCommitsBetween(range, command.locator());
+                List<CommitSummary> commits = appSourceRepositoryPort.getCommitsBetween(range,
+                                command.appSourceLocator());
                 /**
                  * ChangeMetrics metrics = buildMetrics(commits);
                  * TestEvidence tests = testEvidencePort.getTestEvidence(command.service(),

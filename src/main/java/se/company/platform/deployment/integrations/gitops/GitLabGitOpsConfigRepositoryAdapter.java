@@ -21,7 +21,7 @@ import se.company.platform.deployment.domain.Environment;
 import se.company.platform.deployment.domain.DeploymentMergeRequest;
 import se.company.platform.deployment.domain.DeploymentMergeRequestId;
 import se.company.platform.deployment.domain.ServiceIdentifier;
-import se.company.platform.deployment.domain.ServiceLocator;
+import se.company.platform.deployment.domain.ProjectLocator;
 import se.company.platform.deployment.domain.Version;
 import se.company.platform.deployment.domain.port.out.GitOpsConfigRepositoryPort;
 
@@ -47,7 +47,7 @@ public class GitLabGitOpsConfigRepositoryAdapter implements GitOpsConfigReposito
     }
 
     @Override
-    public Version getDeployedVersion(ServiceLocator serviceLocator, ServiceIdentifier service,
+    public Version getDeployedVersion(ProjectLocator serviceLocator, ServiceIdentifier service,
             Environment environment) {
         return repositoryFileApi.getOptionalFile(serviceLocator.path(), service.id(), "main")
                 .map(file -> argoCdManifestParser.readCurrentVersion(file.getDecodedContentAsString()))
@@ -56,7 +56,7 @@ public class GitLabGitOpsConfigRepositoryAdapter implements GitOpsConfigReposito
 
     @Override
     public DeploymentMergeRequest openDeploymentMergeRequest(
-            ServiceLocator serviceLocator,
+            ProjectLocator serviceLocator,
             ServiceIdentifier service,
             Environment environment,
             Version fromVersion,
@@ -94,7 +94,7 @@ public class GitLabGitOpsConfigRepositoryAdapter implements GitOpsConfigReposito
 
     private void updateManifestAndCreateBranch(
             RepositoryFile repositoryFile,
-            ServiceLocator serviceLocator,
+            ProjectLocator serviceLocator,
             String branchName, Version version) {
 
         String manifest = argoCdManifestParser.updateVersion(repositoryFile.getDecodedContentAsString(), version);
@@ -111,7 +111,7 @@ public class GitLabGitOpsConfigRepositoryAdapter implements GitOpsConfigReposito
 
     @Override
     public void updateDeploymentMergeRequestDescription(
-            ServiceLocator serviceLocator,
+            ProjectLocator serviceLocator,
             DeploymentMergeRequestId id,
             String markdownBody) {
         MergeRequestParams params = new MergeRequestParams();
@@ -125,7 +125,7 @@ public class GitLabGitOpsConfigRepositoryAdapter implements GitOpsConfigReposito
 
     @Override
     public void addDeploymentMergeRequestNote(
-            ServiceLocator serviceLocator,
+            ProjectLocator serviceLocator,
             DeploymentMergeRequestId id,
             String note) {
         try {
@@ -137,7 +137,7 @@ public class GitLabGitOpsConfigRepositoryAdapter implements GitOpsConfigReposito
 
     @Override
     public void approveDeploymentMergeRequest(
-            ServiceLocator serviceLocator,
+            ProjectLocator serviceLocator,
             DeploymentMergeRequestId id) {
         try {
             mergeRequestApi.approveMergeRequest(serviceLocator.path(), id.id(), null);
@@ -147,7 +147,7 @@ public class GitLabGitOpsConfigRepositoryAdapter implements GitOpsConfigReposito
     }
 
     @Override
-    public void mergeDeploymentMergeRequest(ServiceLocator serviceLocator, DeploymentMergeRequestId id) {
+    public void mergeDeploymentMergeRequest(ProjectLocator serviceLocator, DeploymentMergeRequestId id) {
         try {
             mergeRequestApi.acceptMergeRequest(serviceLocator, id.id());
         } catch (GitLabApiException e) {

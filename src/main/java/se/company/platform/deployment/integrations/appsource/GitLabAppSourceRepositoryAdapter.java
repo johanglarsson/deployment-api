@@ -13,7 +13,7 @@ import org.gitlab4j.api.models.Tag;
 import se.company.platform.deployment.domain.BreakingChangeInfo;
 import se.company.platform.deployment.domain.CommitRange;
 import se.company.platform.deployment.domain.CommitSummary;
-import se.company.platform.deployment.domain.ServiceLocator;
+import se.company.platform.deployment.domain.ProjectLocator;
 import se.company.platform.deployment.domain.port.out.AppSourceRepositoryPort;
 
 public class GitLabAppSourceRepositoryAdapter implements AppSourceRepositoryPort {
@@ -27,7 +27,7 @@ public class GitLabAppSourceRepositoryAdapter implements AppSourceRepositoryPort
     }
 
     @Override
-    public List<CommitSummary> getCommitsBetween(CommitRange range, ServiceLocator locator) {
+    public List<CommitSummary> getCommitsBetween(CommitRange range, ProjectLocator locator) {
         try {
             Tag fromTag = tagsApi.getTag(locator.path(), range.fromExclusive().value());
             Tag toTag = tagsApi.getTag(locator.path(), range.toInclusive().value());
