@@ -4,7 +4,8 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.UUID;
 
-import se.company.platform.deployment.domain.ApprovalDecision;
+import org.jvnet.hk2.annotations.Service;
+
 import se.company.platform.deployment.domain.ChangeSummary;
 import se.company.platform.deployment.domain.CommitRange;
 import se.company.platform.deployment.domain.Deployment;
@@ -16,6 +17,7 @@ import se.company.platform.deployment.domain.port.out.GitOpsConfigRepositoryPort
 import se.company.platform.deployment.domain.port.out.CiEvidencePort;
 import se.company.platform.deployment.domain.port.out.AppSourceRepositoryPort;
 
+@Service
 public final class DeploymentService implements DeploymentUseCase {
 
         private final GitOpsConfigRepositoryPort gitOpsConfigRepositoryPort;
@@ -41,7 +43,7 @@ public final class DeploymentService implements DeploymentUseCase {
 
                 CommitRange range = new CommitRange(currentVersion, command.targetVersion());
                 ChangeSummary changeSummary = changeSummaryService.collect(range, command.appSourceLocator());
-                String markdown = changeSummaryMarkdownRenderer.render(changeSummary);
+                String changeSummaryMarkdown = changeSummaryMarkdownRenderer.render(changeSummary);
                 DeploymentMergeRequest deploymentMergeRequest = gitOpsConfigRepositoryPort.openDeploymentMergeRequest(
                                 command.configLocator(),
                                 command.service(),
@@ -50,7 +52,7 @@ public final class DeploymentService implements DeploymentUseCase {
                                 command.targetVersion(),
                                 "Branchname",
                                 "Deploy " + command.service() + " " + command.targetVersion(),
-                                markdown);
+                                changeSummaryMarkdown);
                 if (command.environment().isNonProd()) {
                         gitOpsConfigRepositoryPort.approveDeploymentMergeRequest(command.configLocator(),
                                         deploymentMergeRequest.id());

@@ -2,7 +2,6 @@ package se.company.platform.deployment.domain.port.in;
 
 import se.company.platform.deployment.domain.Deployment;
 import se.company.platform.deployment.domain.Environment;
-import se.company.platform.deployment.domain.MergeWhenAllChecksHasPassed;
 import se.company.platform.deployment.domain.ServiceIdentifier;
 import se.company.platform.deployment.domain.ProjectLocator;
 import se.company.platform.deployment.domain.Version;
@@ -18,4 +17,17 @@ public interface DeploymentUseCase {
             Version targetVersion,
             MergeWhenAllChecksHasPassed mergeWhenAllChecksHasPassed) {
     }
+
+    public record MergeWhenAllChecksHasPassed(Boolean value) {
+
+    }
+
+    public record ServiceIdentifier(String id) {
+
+    }
+
+    public record ProjectLocator(String path) {
+
+    }
+
 }

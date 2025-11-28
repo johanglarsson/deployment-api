@@ -15,9 +15,9 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import se.company.platform.deployment.domain.Environment;
-import se.company.platform.deployment.domain.Deployment.DeploymentId;
 import se.company.platform.deployment.domain.DeploymentMergeRequest;
 import se.company.platform.deployment.domain.DeploymentMergeRequest.DeploymentMergeRequestId;
 import se.company.platform.deployment.domain.ServiceIdentifier;
@@ -73,11 +73,14 @@ public class GitLabGitOpsConfigRepositoryAdapter implements GitOpsConfigReposito
             MergeRequestFilter filter = new MergeRequestFilter();
             filter.setSourceBranch(branchName);
             filter.setState(MergeRequestState.OPENED);
-            List<MergeRequest> mergeRequests = mergeRequestApi.getMergeRequests(projectLocator, filter);
-            if (!mergeRequests.isEmpty()) {
-                return new DeploymentMergeRequest(new DeploymentMergeRequestId(mergeRequests.get(0).getIid()),
-                        mergeRequests.get(0).getWebUrl(),
-                        mergeRequests.get(0).getSourceBranch());
+            Optional<MergeRequest> possibleMergeRequest = mergeRequestApi.getMergeRequests(projectLocator, filter)
+                    .stream()
+                    .findFirst();
+
+            if (!possibleMergeRequest.isEmpty()) {
+                return new DeploymentMergeRequest(new DeploymentMergeRequestId(possibleMergeRequest.get().getIid()),
+                        possibleMergeRequest.get().getWebUrl(),
+                        possibleMergeRequest.get().getSourceBranch());
 
             }
             MergeRequestParams params = new MergeRequestParams();
@@ -88,8 +91,7 @@ public class GitLabGitOpsConfigRepositoryAdapter implements GitOpsConfigReposito
                     .withSquash(true)
                     .withTargetBranch("main");
             MergeRequest mergeRequest = mergeRequestApi.createMergeRequest(projectLocator, params);
-            return new DeploymentMergeRequest(new DeploymentMergeRequestId(mergeRequest.getIid()),
-                    mergeRequest.getWebUrl(), branchName);
+            return toDomain(mergeRequest);
         } catch (GitLabApiException e) {
             throw new IllegalStateException("Unable to create a merge request", e);
         }
@@ -156,6 +158,11 @@ public class GitLabGitOpsConfigRepositoryAdapter implements GitOpsConfigReposito
         } catch (GitLabApiException e) {
             throw new IllegalStateException("Unable to merge a merge request", e);
         }
+    }
+
+    public DeploymentMergeRequest toDomain(MergeRequest mergeRequest) {
+        return new DeploymentMergeRequest(new DeploymentMergeRequestId(mergeRequest.getIid()), mergeRequest.getWebUrl(),
+                mergeRequest.getSourceBranch());
     }
 
 }

@@ -4,10 +4,13 @@ import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.stereotype.Component;
+
 import io.pebbletemplates.pebble.PebbleEngine;
 import io.pebbletemplates.pebble.template.PebbleTemplate;
 import se.company.platform.deployment.domain.ChangeSummary;
 
+@Component
 public class ChangeSummaryMarkdownRenderer {
 
     private final PebbleEngine engine;
