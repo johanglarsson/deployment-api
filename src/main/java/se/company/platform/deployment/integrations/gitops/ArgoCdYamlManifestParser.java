@@ -1,4 +1,4 @@
-package se.company.platform.deployment.integrations.configrepo;
+package se.company.platform.deployment.integrations.gitops;
 
 import org.yaml.snakeyaml.Yaml;
 

@@ -1,6 +1,5 @@
 package se.company.platform.deployment.integrations.gitops;
 
-import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
 import org.gitlab4j.api.MergeRequestApi;
 import org.gitlab4j.api.NotesApi;
@@ -18,8 +17,9 @@ import java.util.Date;
 import java.util.List;
 
 import se.company.platform.deployment.domain.Environment;
+import se.company.platform.deployment.domain.Deployment.DeploymentId;
 import se.company.platform.deployment.domain.DeploymentMergeRequest;
-import se.company.platform.deployment.domain.DeploymentMergeRequestId;
+import se.company.platform.deployment.domain.DeploymentMergeRequest.DeploymentMergeRequestId;
 import se.company.platform.deployment.domain.ServiceIdentifier;
 import se.company.platform.deployment.domain.ProjectLocator;
 import se.company.platform.deployment.domain.Version;
@@ -47,16 +47,16 @@ public class GitLabGitOpsConfigRepositoryAdapter implements GitOpsConfigReposito
     }
 
     @Override
-    public Version getDeployedVersion(ProjectLocator serviceLocator, ServiceIdentifier service,
+    public Version getDeployedVersion(ProjectLocator projectLocator, ServiceIdentifier service,
             Environment environment) {
-        return repositoryFileApi.getOptionalFile(serviceLocator.path(), service.id(), "main")
+        return repositoryFileApi.getOptionalFile(projectLocator.path(), service.id(), "main")
                 .map(file -> argoCdManifestParser.readCurrentVersion(file.getDecodedContentAsString()))
                 .orElseThrow(() -> new IllegalStateException("Unable to find file"));
     }
 
     @Override
     public DeploymentMergeRequest openDeploymentMergeRequest(
-            ProjectLocator serviceLocator,
+            ProjectLocator projectLocator,
             ServiceIdentifier service,
             Environment environment,
             Version fromVersion,
@@ -65,18 +65,20 @@ public class GitLabGitOpsConfigRepositoryAdapter implements GitOpsConfigReposito
             String mergeRequestTitle,
             String initialDescription) {
 
-        repositoryFileApi.getOptionalFile(serviceLocator.path(), service.id(), "main")
-                .ifPresentOrElse(file -> updateManifestAndCreateBranch(file, serviceLocator, branchName, toVersion),
+        repositoryFileApi.getOptionalFile(projectLocator.path(), service.id(), "main")
+                .ifPresentOrElse(file -> updateManifestAndCreateBranch(file, projectLocator, branchName, toVersion),
                         () -> new IllegalStateException());
 
         try {
             MergeRequestFilter filter = new MergeRequestFilter();
             filter.setSourceBranch(branchName);
             filter.setState(MergeRequestState.OPENED);
-            List<MergeRequest> mergeRequests = mergeRequestApi.getMergeRequests(serviceLocator, filter);
+            List<MergeRequest> mergeRequests = mergeRequestApi.getMergeRequests(projectLocator, filter);
             if (!mergeRequests.isEmpty()) {
-                return new DeploymentMergeRequest(mergeRequests.get(0).getIid(), mergeRequests.get(0).getWebUrl(),
+                return new DeploymentMergeRequest(new DeploymentMergeRequestId(mergeRequests.get(0).getIid()),
+                        mergeRequests.get(0).getWebUrl(),
                         mergeRequests.get(0).getSourceBranch());
+
             }
             MergeRequestParams params = new MergeRequestParams();
             params.withDescription(initialDescription)
@@ -85,8 +87,9 @@ public class GitLabGitOpsConfigRepositoryAdapter implements GitOpsConfigReposito
                     .withSourceBranch(branchName)
                     .withSquash(true)
                     .withTargetBranch("main");
-            MergeRequest mergeRequest = mergeRequestApi.createMergeRequest(serviceLocator, params);
-            return new DeploymentMergeRequest(mergeRequest.getIid(), mergeRequest.getWebUrl(), branchName);
+            MergeRequest mergeRequest = mergeRequestApi.createMergeRequest(projectLocator, params);
+            return new DeploymentMergeRequest(new DeploymentMergeRequestId(mergeRequest.getIid()),
+                    mergeRequest.getWebUrl(), branchName);
         } catch (GitLabApiException e) {
             throw new IllegalStateException("Unable to create a merge request", e);
         }
@@ -94,15 +97,15 @@ public class GitLabGitOpsConfigRepositoryAdapter implements GitOpsConfigReposito
 
     private void updateManifestAndCreateBranch(
             RepositoryFile repositoryFile,
-            ProjectLocator serviceLocator,
+            ProjectLocator projectLocator,
             String branchName, Version version) {
 
         String manifest = argoCdManifestParser.updateVersion(repositoryFile.getDecodedContentAsString(), version);
         repositoryFile.setContent(manifest);
         try {
-            repositoryApi.getOptionalBranch(serviceLocator, branchName)
-                    .orElse(repositoryApi.createBranch(serviceLocator.path(), branchName, "main"));
-            repositoryFileApi.updateFile(serviceLocator.path(), repositoryFile, branchName,
+            repositoryApi.getOptionalBranch(projectLocator, branchName)
+                    .orElse(repositoryApi.createBranch(projectLocator.path(), branchName, "main"));
+            repositoryFileApi.updateFile(projectLocator.path(), repositoryFile, branchName,
                     "Updated version " + version.value());
         } catch (GitLabApiException e) {
             throw new IllegalStateException("Unable to update manifest", e);
@@ -111,13 +114,13 @@ public class GitLabGitOpsConfigRepositoryAdapter implements GitOpsConfigReposito
 
     @Override
     public void updateDeploymentMergeRequestDescription(
-            ProjectLocator serviceLocator,
+            ProjectLocator projectLocator,
             DeploymentMergeRequestId id,
             String markdownBody) {
         MergeRequestParams params = new MergeRequestParams();
         params.withDescription(markdownBody);
         try {
-            mergeRequestApi.updateMergeRequest(serviceLocator.path(), id.id(), params);
+            mergeRequestApi.updateMergeRequest(projectLocator.path(), id.id(), params);
         } catch (GitLabApiException e) {
             throw new IllegalStateException("Unable to update merge request", e);
         }
@@ -125,11 +128,11 @@ public class GitLabGitOpsConfigRepositoryAdapter implements GitOpsConfigReposito
 
     @Override
     public void addDeploymentMergeRequestNote(
-            ProjectLocator serviceLocator,
+            ProjectLocator projectLocator,
             DeploymentMergeRequestId id,
             String note) {
         try {
-            notesApi.createMergeRequestNote(serviceLocator.path(), id.id(), note, new Date(), false);
+            notesApi.createMergeRequestNote(projectLocator.path(), id.id(), note, new Date(), false);
         } catch (GitLabApiException e) {
             throw new IllegalStateException("Unable to create a new note", e);
         }
@@ -137,19 +140,19 @@ public class GitLabGitOpsConfigRepositoryAdapter implements GitOpsConfigReposito
 
     @Override
     public void approveDeploymentMergeRequest(
-            ProjectLocator serviceLocator,
+            ProjectLocator projectLocator,
             DeploymentMergeRequestId id) {
         try {
-            mergeRequestApi.approveMergeRequest(serviceLocator.path(), id.id(), null);
+            mergeRequestApi.approveMergeRequest(projectLocator.path(), id.id(), null);
         } catch (GitLabApiException e) {
             throw new IllegalStateException("Unable to approve merge request");
         }
     }
 
     @Override
-    public void mergeDeploymentMergeRequest(ProjectLocator serviceLocator, DeploymentMergeRequestId id) {
+    public void mergeDeploymentMergeRequest(ProjectLocator projectLocator, DeploymentMergeRequestId id) {
         try {
-            mergeRequestApi.acceptMergeRequest(serviceLocator, id.id());
+            mergeRequestApi.acceptMergeRequest(projectLocator, id.id());
         } catch (GitLabApiException e) {
             throw new IllegalStateException("Unable to merge a merge request", e);
         }

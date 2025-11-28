@@ -28,4 +28,6 @@ public class Deployment {
         this.mergeRequestInfo = mergeRequestInfo;
     }
 
+    public record DeploymentId(UUID id) {
+    }
 }

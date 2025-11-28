@@ -2,11 +2,14 @@ package se.company.platform.deployment.domain.service;
 
 import static java.util.Objects.requireNonNull;
 
-import java.util.List;
+import java.util.UUID;
 
+import se.company.platform.deployment.domain.ApprovalDecision;
+import se.company.platform.deployment.domain.ChangeSummary;
 import se.company.platform.deployment.domain.CommitRange;
-import se.company.platform.deployment.domain.CommitSummary;
 import se.company.platform.deployment.domain.Deployment;
+import se.company.platform.deployment.domain.Deployment.DeploymentId;
+import se.company.platform.deployment.domain.DeploymentMergeRequest;
 import se.company.platform.deployment.domain.Version;
 import se.company.platform.deployment.domain.port.in.DeploymentUseCase;
 import se.company.platform.deployment.domain.port.out.GitOpsConfigRepositoryPort;
@@ -16,14 +19,18 @@ import se.company.platform.deployment.domain.port.out.AppSourceRepositoryPort;
 public final class DeploymentService implements DeploymentUseCase {
 
         private final GitOpsConfigRepositoryPort gitOpsConfigRepositoryPort;
-        private final CiEvidencePort ciEvidencePort;
-        private final AppSourceRepositoryPort appSourceRepositoryPort;
+        private final ChangeSummaryService changeSummaryService;
+        private final ChangeSummaryMarkdownRenderer changeSummaryMarkdownRenderer;
 
-        public DeploymentService(GitOpsConfigRepositoryPort gitOpsConfigRepositoryPort, CiEvidencePort ciEvidencePort,
-                        AppSourceRepositoryPort appSourceRepositoryPort) {
+        public DeploymentService(
+                        GitOpsConfigRepositoryPort gitOpsConfigRepositoryPort,
+                        CiEvidencePort ciEvidencePort,
+                        AppSourceRepositoryPort appSourceRepositoryPort,
+                        ChangeSummaryService changeSummaryService,
+                        ChangeSummaryMarkdownRenderer changeSummaryMarkdownRenderer) {
                 this.gitOpsConfigRepositoryPort = requireNonNull(gitOpsConfigRepositoryPort);
-                this.ciEvidencePort = requireNonNull(ciEvidencePort);
-                this.appSourceRepositoryPort = requireNonNull(appSourceRepositoryPort);
+                this.changeSummaryService = requireNonNull(changeSummaryService);
+                this.changeSummaryMarkdownRenderer = requireNonNull(changeSummaryMarkdownRenderer);
         }
 
         @Override
@@ -33,57 +40,36 @@ public final class DeploymentService implements DeploymentUseCase {
                                 command.environment());
 
                 CommitRange range = new CommitRange(currentVersion, command.targetVersion());
+                ChangeSummary changeSummary = changeSummaryService.collect(range, command.appSourceLocator());
+                String markdown = changeSummaryMarkdownRenderer.render(changeSummary);
+                DeploymentMergeRequest deploymentMergeRequest = gitOpsConfigRepositoryPort.openDeploymentMergeRequest(
+                                command.configLocator(),
+                                command.service(),
+                                command.environment(),
+                                currentVersion,
+                                command.targetVersion(),
+                                "Branchname",
+                                "Deploy " + command.service() + " " + command.targetVersion(),
+                                markdown);
+                if (command.environment().isNonProd()) {
+                        gitOpsConfigRepositoryPort.approveDeploymentMergeRequest(command.configLocator(),
+                                        deploymentMergeRequest.id());
+                        if (command.mergeWhenAllChecksHasPassed().value()) {
+                                gitOpsConfigRepositoryPort.mergeDeploymentMergeRequest(command.configLocator(),
+                                                deploymentMergeRequest.id());
+                        }
+                }
 
-                List<CommitSummary> commits = appSourceRepositoryPort.getCommitsBetween(range,
-                                command.appSourceLocator());
-                /**
-                 * ChangeMetrics metrics = buildMetrics(commits);
-                 * TestEvidence tests = testEvidencePort.getTestEvidence(command.service(),
-                 * command.targetVersion());
-                 * CoverageEvidence coverage =
-                 * coverageEvidencePort.getCoverageEvidence(command.service(),
-                 * command.targetVersion());
-                 * 
-                 * ChangeClassification classification = classificationPolicy.classify(metrics,
-                 * tests, coverage);
-                 * 
-                 * ChangeSummary changeSummary = new ChangeSummary(range, commits, metrics,
-                 * tests, coverage,
-                 * classification);
-                 * 
-                 * String branchName = createBranchName(command, previousVersion);
-                 * String mrTitle = "Deploy " + command.service().value() + " " +
-                 * command.targetVersion().value() + " to " + command.environment();
-                 * 
-                 * String initialDescription = renderInitialMrDescription(changeSummary);
-                 * 
-                 * MergeRequestInfo mr = configRepository.updateVersionAndOpenMergeRequest(
-                 * command.service(),
-                 * command.environment(),
-                 * previousVersion,
-                 * command.targetVersion(),
-                 * branchName,
-                 * mrTitle,
-                 * initialDescription);
-                 * 
-                 * ApprovalDecision decision = decideApproval(command.environment(),
-                 * classification, changeSummary);
-                 * 
-                 * applyDecisionToMergeRequest(mr.id(), decision);
-                 * 
-                 * return new Deployment(
-                 * new DeploymentId(UUID.randomUUID()),
-                 * command.service(),
-                 * command.environment(),
-                 * previousVersion,
-                 * command.targetVersion(),
-                 * changeSummary,
-                 * decision,
-                 * mr);
-                 **/
-                return null;
+                return new Deployment(
+                                new DeploymentId(UUID.randomUUID()),
+                                command.service(),
+                                command.appSourceLocator(),
+                                command.environment(),
+                                currentVersion,
+                                command.targetVersion(),
+                                changeSummary,
+                                null,
+                                deploymentMergeRequest);
         }
 
-        // helper methods: buildMetrics, createBranchName, renderInitialMrDescription,
-        // decideApproval, applyDecisionToMergeRequest
 }

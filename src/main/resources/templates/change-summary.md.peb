@@ -1,0 +1,41 @@
+# Deployment Evidence Summary
+
+**Change Classification:** {{ classification }}
+
+**Commit Range:** `{{ commitRange.fromExclusive.value }}` → `{{ commitRange.toInclusive.value }}`
+
+## Commits
+{% if commits is empty %}
+_No commits in this range_
+{% else %}
+{% for commit in commits %}
+- {{ commit.id  }} — {{ commit.message }} ({{ commit.author }})
+{% endfor %}
+{% endif %}
+
+## Change Metrics
+- **Commits:** {{ metrics.commitCount }}
+- **Files changed:** {{ metrics.filesChanged }}
+- **Lines added:** {{ metrics.totalLinesAdded }}
+- **Lines deleted:** {{ metrics.totalLinesDeleted }}
+- **Breaking changes:** {% if metrics.breakingChangesPresent %}⚠️ Yes{% else %}No{% endif %}
+
+## Test Evidence
+- **Executed:** {{ testEvidence.testsExecuted }}
+- **Total tests:** {{ testEvidence.totalTests }}
+- **Failed tests:** {{ testEvidence.failedTests }}
+- **Unit tests present:** {{ testEvidence.unitTestsPresent }}
+- **Integration tests present:** {{ testEvidence.integrationTestsPresent }}
+{% if testEvidence.testReportUrl.toString() %}
+- **Report:** {{ testEvidence.testReportUrl.toString() }}
+{% endif %}
+
+## Coverage Evidence
+- **Line coverage:** {{ coverageEvidence.lineCoverage }}%
+- **Branch coverage:** {{ coverageEvidence.branchCoverage }}%
+{% if coverageEvidence.coverageDelta %}
+- **Coverage delta:** {{ coverageEvidence.coverageDelta }}
+{% endif %}
+{% if coverageEvidence.coverageReportUrl.toString() %}
+- **Report:** {{ coverageEvidence.coverageReportUrl.toString() }}
+{% endif %}

@@ -10,7 +10,7 @@ import org.gitlab4j.api.TagsApi;
 import org.gitlab4j.api.models.Commit;
 import org.gitlab4j.api.models.Tag;
 
-import se.company.platform.deployment.domain.BreakingChangeInfo;
+import se.company.platform.deployment.domain.ChangeSummary.BreakingChangeInfo;
 import se.company.platform.deployment.domain.CommitRange;
 import se.company.platform.deployment.domain.CommitSummary;
 import se.company.platform.deployment.domain.ProjectLocator;

@@ -9,4 +9,8 @@ public record ChangeSummary(
                 TestEvidence testEvidence,
                 CoverageEvidence coverageEvidence,
                 ChangeClassification classification) {
+        public record BreakingChangeInfo(boolean breaking, String reason) {
+
+        }
+
 }

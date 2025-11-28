@@ -8,6 +8,8 @@ import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
 import se.company.platform.deployment.domain.Version;
+import se.company.platform.deployment.integrations.gitops.ArgoCdManifestParser;
+import se.company.platform.deployment.integrations.gitops.ArgoCdYamlManifestParser;
 
 public class ArgoCdYamlManifestParserTest {
 
